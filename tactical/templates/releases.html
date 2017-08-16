@@ -1,0 +1,37 @@
+{% extends "layout.html" %}
+{% block content %}
+<h1>Epic Releases</h1>
+<br>
+<div class="options-form" style="padding-left:20px">
+    <form action="{{update_url}}" method="get">
+        <p><input name="csv-issues" placeholder="Jira Issue Keys">
+        <input type="submit" name="submit" value="Update"></p>
+    </form>    jira-tickets/story-points
+</div>
+<div class="releases">
+<table>
+    <tr>
+        <td></td>
+        {% for r in releases %}
+        <td class="release-header" style="padding-right:16px">
+        {% if r.released %}<font color="LightGray">{% endif %}
+        <b>{{r.title}}<br>{{r.release_date}}</b>
+        {% if r.released %}</font>{% endif %}
+        </td>
+        {% endfor %}
+    </tr>
+    {% for e in epics %}
+    <tr>
+        <td class="epic-link" style="max-width:175px; overflow: hidden; text-overflow: ellipsis"><a href="{{e.jira_epic_url}}">{{e.id}}: {{e.summary}}</a></td>
+        {% for r in releases %}
+        <td class="epic-release-data" style="vertical-align:top; padding-right:16px">
+            {% if e2r[e.id][r.id] is defined %}
+            {{e2r[e.id][r.id]['count']}}/{{e2r[e.id][r.id]['story_points']}}
+            {% endif %}
+        </td>
+        {% endfor %}
+    </tr>
+    {% endfor %}
+</table>
+</div>
+{% endblock %}

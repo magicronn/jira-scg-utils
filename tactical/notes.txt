@@ -1,0 +1,41 @@
+ToDos
+
+* Make data points clickable on all graphs
+  Data points can respond to events: http://api.highcharts.com/highcharts/series%3Cbar%3E.point.events
+  There's a fiddle sample there.
+  They get passed a Point object in the this pointer:  http://api.highcharts.com/highcharts/Point
+  So, now I need to set a data key on each point for the URL to use...
+  Basically, in the chart under pltoOptions, after column, add:
+            series: {
+                cursor: 'pointer',
+                point: {
+                    events: {
+                        click: function () {
+                            Navigate to this link...
+                             location.href = 'https://cradlepoint.atlassian.net/search?jql=' + this.options.key;
+                                this.options.key;
+                        }
+                    }
+            }
+
+* Check in to git
+
+* Epic staffing
+  + Fix the QA user groups... Many do exist... Need updating
+  + Arch POC filter based on label
+
+* Epic Burndowns
+  + Can we put links on the new work on each day?
+  + Same for unestimated?
+
+* Design Epics In Progress
+  Want to show current load/assignment for all "in progress" epics. Be able to answer question: "What happens if we pull
+  people off of LAB X?"
+  Should have option to include Non-Lab In Progress work
+
+
+* Put all styles in a master css that is loaded in base layout.html
+* Add optional maxResults and startAt to both jira query utils.
+* Reduce query overhead with explicit fields and extend query params
+* In Jira utils, can I make a generator that will deal with query pagination?
+* Move data into local sqllite and marshmallow-sqlalchemy

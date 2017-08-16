@@ -1,0 +1,6 @@
+requests
+marshmallow_jsonapi
+marshmallow
+flask
+arrow
+

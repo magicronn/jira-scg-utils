@@ -1,0 +1,92 @@
+{% extends "layout.html" %}
+{% block content %}
+<h1>Epic Staffing</h1>
+<br>
+<table>
+    <tr>
+        <td></td>
+        <td></td>
+        <td><b>Available&nbsp;&nbsp;</b></td>
+        {% for c in chapters %}
+        <td class="chapter-header" style="padding-right:16px"><b>{{c.id}}</b></td>
+        {% endfor %}
+    </tr>
+    <tr>
+        <td class="whoswhat-summary" style="vertical-align:top; padding-left:16px;">
+            {% for status, cnt in epic_cnts.iteritems() %}
+            <p style="padding-left:16px">{{cnt}} {{status}}</p>
+            {% endfor %}
+        </td>
+        <td class="options-form" style="vertical-align:top; padding-left:16px;">
+            <form action="{{update_url}}" method="get">
+                <p><input name="csv-issues" placeholder="Jira Issue Keys">
+                <input type="submit" name="submit" value="Update"></p>
+                {% for uf in user_filters %}
+                <p style="padding-left:16px">
+                    <input type="checkbox" name="{{uf.id}}" value="{{uf.summary}}" {% if uf.checked %}checked{% endif %}>
+                    {{uf.summary}}
+                </p>
+                {% endfor %}
+            </form>
+        </td>
+        <td></td>
+        {% for c in chapters %}
+        <td class="chapter-members" style="vertical-align:top; padding-right:16px">
+        {% for u in c.users %}
+            {{u.display_name}}<br>
+        {% endfor %}
+        </td>
+        {% endfor %}
+    </tr>
+    <tr ></tr>
+    <tr>
+        <td></td>
+        <td></td>
+        <td></td>
+        {% for c in chapters %}
+        <td class="chapter-header" style="padding-right:16px"><b>{{c.id}}</b></td>
+        {% endfor %}
+    </tr>
+    {% for e in selected_epics %}
+    <tr>
+        <td style="padding-left:16px"></td>
+        <td class="epic-link" style="max-width:175px; overflow: hidden; text-overflow: ellipsis"><a href="{{e.jira_epic_url}}">{{e.id}}: {{e.summary}}</a></td>
+        <td>{{e.assignee.display_name}}</td>
+        {% for c in chapters %}
+        <td class="epic-whoswhat-data" style="text-align:left">{{selected_epic_chapter_counts[e.id][c.id]}}</td>
+        {% endfor %}
+    </tr>
+    {% endfor %}
+    <tr>
+        <td><p></p></td>
+    </tr>
+    {% for e in epics_to_dev %}
+    <tr>
+        <td style="padding-left:16px">(thumb) dev</td>
+        <td class="epic-link" style="max-width:175px; overflow: hidden; text-overflow: ellipsis"><a href="{{e.jira_epic_url}}">{{e.id}}: {{e.summary}}</a></td>
+        <td>{{e.assignee.display_name}}</td>
+        {% for c in chapters %}
+        <td class="epic-whoswhat-data" style="text-align:left">{{dev_epic_chapter_counts[e.id][c.id]}}</td>
+        {% endfor %}
+    </tr>
+    {% endfor %}
+    <tr>
+        <td><p></p></td>
+    </tr>
+    {% for e in epics_to_scope %}
+    <tr>
+        <td style="padding-left:16px">(thumb) scope</td>
+        <td class="epic-link" style="max-width:175px; overflow: hidden; text-overflow: ellipsis"><a href="{{e.jira_epic_url}}">{{e.id}}: {{e.summary}}</a></td>
+        <td>
+            {% if e.assignee.display_name is equalto "Unassigned" %}
+            <i>Unassigned</i>
+            {% else %}
+            {{e.assignee.display_name}}
+            {% endif %}
+        </td>
+        {% for c in chapters %}
+        <td class="epic-whoswhat-data" style="text-align:left">{{scope_epic_chapter_counts[e.id][c.id]}}</td>
+        {% endfor %}
+    {% endfor %}
+</table>
+{% endblock %}

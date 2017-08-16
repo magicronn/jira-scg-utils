@@ -1,0 +1,97 @@
+{% extends "layout.html" %}
+{% block content %}
+<h1>Epic Burndowns</h1>
+<br>
+<form action="{{update_url}}" method="get">
+    <div style="padding-left:20px">
+                <p><input name="csv-issues" placeholder="Jira Issue Keys">
+                <input type="submit" name="submit" value="Update"></p>
+    </div>
+</form>
+{% for e in selected_epics %}
+<div>
+    <div id="bd-header-{{e.id}}" style="overflow: hidden; text-overflow: ellipsis">
+        <b><a href="{{e.jira_epic_url}}">{{e.id}}: {{e.summary}}</a></b>
+        <div id="bd-{{e.id}}" style="min-width: 310px; height: 400px; margin: 0 auto"></div>
+    </div>
+</div>
+{% endfor %}
+
+<script>
+    $(function () {
+    {% for e in selected_epics %}
+
+    var chart{{loop.index}} = Highcharts.chart('bd-{{e.id}}', {
+
+        chart: {
+            type: 'column'
+        },
+        title: {
+            text: ''
+        },
+        xAxis: {
+            categories: [ {% for d in burndown_categories[e.id] %} '{{d}}', {% endfor %} ]
+        },
+        yAxis: {
+            min: 0,
+            title: {
+                text: 'story points'
+            },
+            stackLabels: {
+                enabled: false,
+                style: {
+                    fontWeight: 'bold',
+                    color: (Highcharts.theme && Highcharts.theme.textColor) || 'gray'
+                }
+            }
+        },
+        legend: {
+            align: 'right',
+            x: -30,
+            verticalAlign: 'top',
+            y: 25,
+            floating: true,
+            backgroundColor: (Highcharts.theme && Highcharts.theme.background2) || 'white',
+            borderColor: '#CCC',
+            borderWidth: 1,
+            shadow: false
+        },
+        tooltip: {
+            headerFormat: '<b>{point.x}</b><br/>',
+            pointFormat: '{series.name}: {point.y}'
+        },
+        plotOptions: {
+            column: {
+                stacking: 'normal',
+                groupPadding: 0,
+                dataLabels: {
+                    enabled: false,
+                    color: (Highcharts.theme && Highcharts.theme.dataLabelsColor) || 'white'
+                }
+            }
+        },
+        series: [
+            {
+                name: 'Predicted', color: '#8D8D8E',
+                data: [{% for d in burndown_series[e.id][3] %} {{d}}, {% endfor %}]
+            },
+            {
+                name: 'New Work', color: '#A8303A',
+                data: [{% for d in burndown_series[e.id][2] %} {{d}}, {% endfor %}]
+            },
+            {
+                name: 'Remaining', color: '#414FA8',
+                data: [{% for d in burndown_series[e.id][1] %} {{d}}, {% endfor %}]
+            },
+            {
+                name: 'Unestimated', color: '#432534',
+                data: [{% for d in burndown_series[e.id][0] %} {{d}}, {% endfor %}]
+            }
+        ]
+    });
+
+    {% endfor %}
+});
+</script>
+
+{% endblock %}
