@@ -18,9 +18,9 @@ app = Flask(__name__)
 all_chapter_keys = u'UIX, DPL, CTL, ECM, EO, TES, FW, BSF, AP, SSO, DS, HAR, PCI, QFQ, QP' \
                    ', QAS' if not quick_debug else u'BSF, SSO, ECM, UIX, CTL'
 relevant_chapter_keys = [x.strip() for x in all_chapter_keys.split(',')]
-chapter_user_groups = {'UIX':'UIX Chapter', 'DPL': 'DAT Chapter', 'CTL': 'CTL Chapter',
-                       'ECM': 'ECM-Core Team', 'EO':'EngOps',
-                       'BSF': 'BSF Team', 'DS':'ECM-App Team', 'HAR': 'HW Team'}
+chapter_user_groups = {'UIX': 'UIX Chapter', 'DPL': 'DAT Chapter', 'CTL': 'CTL Chapter',
+                       'ECM': 'ECM-Core Team', 'EO': 'EngOps',
+                       'BSF': 'BSF Team', 'DS': 'ECM-App Team', 'HAR': 'HW Team'}
 unassigned_user = User(id='Unassigned', display_name='Unassigned')
 unknown_release = Release(id='No Release', title='No Release', description='None', chapter_key=None,
                           release_date=None, released=False, jira_release_url=None, issue_digests=None)
@@ -41,7 +41,7 @@ def _users_in_squad(key):
 
     # Now get the users who have issues in progress in these epicz.
     q = 'search/?jql=project={} AND "Epic Link" in ({}) AND type!=Epic AND '\
-            'statusCategory="In Progress"'.format(key, epics_str)
+        'statusCategory="In Progress"'.format(key, epics_str)
     labs = exec_jira_query(q)
     if 'issues' in labs:
         # Change this to query by chapter whose epiclink is in this project
@@ -56,7 +56,8 @@ def _users_in_chapter_work(key=None):
     filtered_users = set()
     # find all active LAB epics and compile their list of users.
     if key:
-        q = 'search/?jql=project={} AND type!=Epic and statusCategory="In Progress"&startAt=0&maxResults=1000'.format(key)
+        q = 'search/?jql=project={} AND type!=Epic and statusCategory="In Progress"&' \
+            'startAt=0&maxResults=1000'.format(key)
     else:
         q = 'search/?jql=project in ({}) ' \
             'AND type!=Epic and statusCategory="In Progress"'.format(all_chapter_keys)
@@ -164,6 +165,7 @@ def bucket_deltas_from_issue_history(issue, date_buckets):
     Need to calc (new_story_points, finished_story_points, added_unestimated_issues, deleted_unestimated_issues)
     tuples for each change.
     :param issue: object representing a jira issue including change history.
+    :param date_buckets: map of arrow dates to map of tuples. returned by function.
     :return: date_buckets map of date bucket starts to four tuples: (E, U) for just this issue
     :rtype: dict of date:(int, int, int, int)
     """
@@ -376,7 +378,7 @@ def _build_release(r, chapter_key=None, include_digests=True):
     release_id = r['id']
     title = r['name']
     description = r.get('description', '')
-    archived = r.get('archived', False)
+    # archived = r.get('archived', False)
     release_date = r.get('releaseDate', None)
     jira_release_url = r.get('self', None)
     released = r.get('released', False)
@@ -782,18 +784,18 @@ def gen_epic_assignments_page(checked_ufs, issue_keys):
     #     for eid in e.issue_digests:
     #         secid[e.id][eid.chapter_key] = eid.ttl_issue_cnt
 
-    x = render_template('whoswhat.html', epic_cnts=epic_cnt_summary,
-                        user_filters=user_filter_states,
-                        chapters=chaps,
-                        selected_epics=selected_epics,
-                        # epics_to_scope=epics_to_scope,
-                        # epics_to_dev=epics_to_dev,
-                        selected_epic_chapter_counts=selecid,
-                        # dev_epic_chapter_counts=decid,
-                        # scope_epic_chapter_counts=secid,
-                        update_url=from_url)
+    rv = render_template('whoswhat.html', epic_cnts=epic_cnt_summary,
+                         user_filters=user_filter_states,
+                         chapters=chaps,
+                         selected_epics=selected_epics,
+                         # epics_to_scope=epics_to_scope,
+                         # epics_to_dev=epics_to_dev,
+                         selected_epic_chapter_counts=selecid,
+                         # dev_epic_chapter_counts=decid,
+                         # scope_epic_chapter_counts=secid,
+                         update_url=from_url)
 
-    return x
+    return rv
 
 
 def gen_epic_burndowns_page(issue_keys):
@@ -812,23 +814,24 @@ def gen_epic_burndowns_page(issue_keys):
             selected_epics.append(e)
             bd = get_burndown_by_jira_id(e.jira_id)
             date_labels = []
-            series_data = [[], [], [], []]
+            series_data = {'unest':[], 'remaining':[], 'new':[], 'predicted':[]}
             for bdb in bd.bars:
-                series_data[0].append(bdb.unestimated_count)
-                series_data[1].append(bdb.remaining_work)
-                series_data[2].append(bdb.new_work)
-                series_data[3].append(bdb.predicted_work)
+                series_data['unest'].append({'y': bdb.unestimated_count, 'issue_keys': 'LAB-273'})
+                series_data['remaining'].append({'y': bdb.remaining_work, 'issue_keys': 'LAB-170'})
+                series_data['new'].append({'y': bdb.new_work, 'issue_keys': 'LAB-64'})
+                series_data['predicted'].append({'y': bdb.predicted_work, 'issue_keys': 'LAB-23'})
+
                 date_labels.append(bdb.start_dt)
             epic_to_series[eid] = series_data
             epic_to_labels[eid] = date_labels
 
-    x = render_template('burndowns.html',
-                        selected_epics=selected_epics,
-                        burndown_categories=epic_to_labels,
-                        burndown_series=epic_to_series,
-                        update_url=from_url)
+    rv = render_template('burndowns.html',
+                         selected_epics=selected_epics,
+                         burndown_categories=epic_to_labels,
+                         burndown_series=epic_to_series,
+                         update_url=from_url)
 
-    return x
+    return rv
 
 
 def gen_epic_releases_page(issue_keys):
@@ -865,12 +868,12 @@ def gen_epic_releases_page(issue_keys):
     # Order the list of releases by release date, Nones go last
     releases = release_hash.values()
     releases.sort(key=lambda a: ('3000', a.title) if not a.release_date else (a.release_date, a.title))
-    x = render_template('releases.html',
-                        epics=epics,
-                        releases=releases,
-                        e2r=epic2rel2counts,
-                        update_url=from_url)
-    return x
+    rv = render_template('releases.html',
+                         epics=epics,
+                         releases=releases,
+                         e2r=epic2rel2counts,
+                         update_url=from_url)
+    return rv
 
 
 @app.route('/')
@@ -884,7 +887,7 @@ def whoswhat_report():
     checked_ufs = []
     for k, v in request.args.iteritems():
         if k == 'csv-issues':
-            split_keys = [x.strip().upper() for x in v.split()]
+            split_keys = [key.strip().upper() for key in v.split()]
         elif k != 'submit':
             checked_ufs.append(k)
     return gen_epic_assignments_page(checked_ufs, split_keys)
@@ -895,7 +898,7 @@ def burndown_report():
     split_keys = []
     issue_keys = request.args.get('csv-issues', None)
     if issue_keys:
-        split_keys = [x.strip().upper() for x in issue_keys.split()]
+        split_keys = [key.strip().upper() for key in issue_keys.split()]
     return gen_epic_burndowns_page(split_keys)
 
 
@@ -904,12 +907,10 @@ def releases_report():
     split_keys = []
     issue_keys = request.args.get('csv-issues', None)
     if issue_keys:
-        split_keys = [x.strip().upper() for x in issue_keys.split()]
+        split_keys = [key.strip().upper() for key in issue_keys.split()]
     return gen_epic_releases_page(split_keys)
 
-
 # </editor-fold>
-
 
 if __name__ == "__main__":
     app.run(debug=True)

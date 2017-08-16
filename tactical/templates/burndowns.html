@@ -68,24 +68,35 @@
                     enabled: false,
                     color: (Highcharts.theme && Highcharts.theme.dataLabelsColor) || 'white'
                 }
+            },
+            series: {
+                cursor: 'pointer',
+                point: {
+                    events: {
+                        click: function () {
+                            location.href='https://cradlepoint.atlassian.net/issues/?jql=key in ('+this.options.key+')'
+                            {# alert(this.options.key) #}
+                        }
+                    }
+                }
             }
         },
         series: [
             {
                 name: 'Predicted', color: '#8D8D8E',
-                data: [{% for d in burndown_series[e.id][3] %} {{d}}, {% endfor %}]
+                data: [{% for d in burndown_series[e.id]['predicted'] %} {y: {{d.y}}, key:'{{d.issue_keys}}' }, {% endfor %}]
             },
             {
                 name: 'New Work', color: '#A8303A',
-                data: [{% for d in burndown_series[e.id][2] %} {{d}}, {% endfor %}]
+                data: [{% for d in burndown_series[e.id]['new'] %} {y: {{d.y}}, key:'{{d.issue_keys}}' }, {% endfor %}]
             },
             {
                 name: 'Remaining', color: '#414FA8',
-                data: [{% for d in burndown_series[e.id][1] %} {{d}}, {% endfor %}]
+                data: [{% for d in burndown_series[e.id]['remaining'] %} {y: {{d.y}}, key:'{{d.issue_keys}}' }, {% endfor %}]
             },
             {
                 name: 'Unestimated', color: '#432534',
-                data: [{% for d in burndown_series[e.id][0] %} {{d}}, {% endfor %}]
+                data: [{% for d in burndown_series[e.id]['unest'] %} {y: {{d.y}}, key:'{{d.issue_keys}}' }, {% endfor %}]
             }
         ]
     });

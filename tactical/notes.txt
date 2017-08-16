@@ -12,11 +12,16 @@ ToDos
                     events: {
                         click: function () {
                             Navigate to this link...
+                            alert(this.options.key);
                              location.href = 'https://cradlepoint.atlassian.net/search?jql=' + this.options.key;
                                 this.options.key;
                         }
                     }
+                }
             }
+  My data is in bars of four segments [ {name:"", color:### data:[ {y:###, key:askdlfjaskdf] }
+  Right now my points are just assumed y:###
+  Need to add a key that is a CSV string of issue keys to load, one per data point. Woof. Doable. Just busy.
 
 * Check in to git
 
