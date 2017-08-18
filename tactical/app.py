@@ -178,6 +178,7 @@ def bucket_deltas_from_issue_history(issue, date_buckets):
     cur_sp = issue['fields'].get('customfield_10004', 0)  # Get starting values
 
     # If the issue has been closed, let's remove either the SP or the default SP from totals
+    issue_key = issue['key']
     status = issue['fields']['status']['statusCategory']['name']
     if status == "Done":
         resolution_date = issue['fields']['resolutiondate']
