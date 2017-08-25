@@ -1,52 +1,37 @@
 ToDos
+* Releases
+  + Make release metrics clickable
+  + Figure out how to handle test
 
-* Burndowns
-  Okay, let's alter the logic a bit.
-  Rather than just storing the deltas, let's store a tuple for each issue affected on a date.
-  key, new, done, add_unest, del_unest  (basically the deltas for each series)
-  Now we can generate the exact list fo what is in each date bucket my iterating over dates and setting values.
-  Building a burndownbar for each bucket.
-  The list of keys is just as changeable...
-  Pretty clsoe to what I have now but integrated into on tuple of 5.
 
-* Make data points clickable on all graphs
-  Data points can respond to events: http://api.highcharts.com/highcharts/series%3Cbar%3E.point.events
-  There's a fiddle sample there.
-  They get passed a Point object in the this pointer:  http://api.highcharts.com/highcharts/Point
-  So, now I need to set a data key on each point for the URL to use...
-  Basically, in the chart under pltoOptions, after column, add:
-            series: {
-                cursor: 'pointer',
-                point: {
-                    events: {
-                        click: function () {
-                            Navigate to this link...
-                            alert(this.options.key);
-                             location.href = 'https://cradlepoint.atlassian.net/search?jql=' + this.options.key;
-                                this.options.key;
-                        }
-                    }
-                }
-            }
-  My data is in bars of four segments [ {name:"", color:### data:[ {y:###, key:askdlfjaskdf] }
-  Right now my points are just assumed y:###
-  Need to add a key that is a CSV string of issue keys to load, one per data point. Woof. Doable. Just busy.
+* Epic Burndowns
+  + overlay a line with cumulative velocity on it; velocity moving average - last N completed time periods
+  + Refactor bucketing deltas
+      Rather than just storing the deltas, let's store a tuple for each issue affected on a date. These are the bucket:{key:[deltas]}
+      Now we can generate the exact list of what is in each date bucket my iterating over dates and merging deltas.
+      The keys in each new, work, unest are implied from the deltas.
+      Pretty clsoe to what I have now but integrated into on tuple of 5. Should be a lot neater and easier to read.
 
-* Check in to git
 
 * Epic staffing
   + Fix the QA user groups... Many do exist... Need updating
   + Arch POC filter based on label
 
-* Epic Burndowns
-  + Can we put links on the new work on each day?
-  + Same for unestimated?
-  + overlay a line with cumulative velocity on it; velocity moving average - last N completed time periods   
 
-* Design Epics In Progress
-  Want to show current load/assignment for all "in progress" epics. Be able to answer question: "What happens if we pull
-  people off of LAB X?"
-  Should have option to include Non-Lab In Progress work
+* Whos What Report
+  Columns of chapters
+  Rows are KeepLightsOn, Infra, ChapterWork, and one per active LAB epic
+  From the set of all In Progress ticket per chapter
+  From the set of all in Progress LAB epic
+  (Basically the opposite of the top of the kickoff report)
+    Show avatars and names. Make people clickable to show the work, hover tag shows list of work assigned and in progess
+  Options to:
+      Include LAB epics not-yet-In-Progress (and the child stories/tasks/etc.)
+      Include all Chapter work not-yet-In-Progress
+      Hide anything not updated in N days (not really in progress)
+      Hide assigned to non-devs
+      Hide escalations
+      Hide bugs
 
 
 * Put all styles in a master css that is loaded in base layout.html

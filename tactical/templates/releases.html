@@ -26,7 +26,7 @@
         {% for r in releases %}
         <td class="epic-release-data" style="vertical-align:top; padding-right:16px">
             {% if e2r[e.id][r.id] is defined %}
-            {{e2r[e.id][r.id]['count']}}/{{e2r[e.id][r.id]['story_points']}}
+            <a href="{{e2r[e.id][r.id]['nav_url']}}">{{e2r[e.id][r.id]['count']}}/{{e2r[e.id][r.id]['story_points']}}</a>
             {% endif %}
         </td>
         {% endfor %}

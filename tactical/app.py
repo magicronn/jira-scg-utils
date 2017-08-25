@@ -889,7 +889,6 @@ def gen_epic_releases_page(issue_keys):
             ' AND status="In Development" ORDER BY cf[10200] ASC'
         epics_json = exec_jira_query(q)
 
-        # limit isn't working...
         for epic in epics_json['issues']:
             epics.append(_build_epic(epic))
 
@@ -903,6 +902,12 @@ def gen_epic_releases_page(issue_keys):
     for epic in epics:
         epic2rel2counts[epic.id], issue_releases = _hash_epics_releases(epic.id)
         release_hash.update(issue_releases)
+
+    nav_url_template = "https://cradlepoint.atlassian.net/issues/?jql=fixVersion={} and \"Epic Link\"={}"
+    for epic in epics:
+        for rid in release_hash.keys():
+            if rid in epic2rel2counts[epic.id]:
+                epic2rel2counts[epic.id][rid]['nav_url'] = nav_url_template.format(rid,epic.id)
 
     # Order the list of releases by release date, Nones go last
     releases = release_hash.values()
