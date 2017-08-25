@@ -143,7 +143,22 @@ def get_bucket_for_date(date_text):
     return dt_start
 
 
-def add_to_bucket(date_buckets, date_text, new_sp=0, fin_sp=0, add_unest=0, del_unest=0):
+def add_to_issue_bucket(issue_buckets, date_text, new_key=None, done_key=None, unest_key=None, est_key=None):
+    change_date = get_bucket_for_date(date_text).format('YYYY-MM-DD')
+    (c_new_keys, c_done_keys, c_unest_keys, c_est_keys) = issue_buckets.get(change_date, ([], [], [], []))
+    if new_key:
+        c_new_keys.append(new_key)
+    if done_key:
+        c_done_keys.append(done_key)
+    if unest_key:
+        c_unest_keys.append(unest_key)
+    if est_key:
+        c_est_keys.append(est_key)
+    issue_buckets[change_date] = (c_new_keys, c_done_keys, c_unest_keys, c_est_keys)
+    return issue_buckets
+
+
+def add_to_date_bucket(date_buckets, date_text, new_sp=0, fin_sp=0, add_unest=0, del_unest=0):
     """
     Combine deltas into existing or new buckets by date.
     :param date_buckets: dict of date-key to tuple
@@ -159,7 +174,10 @@ def add_to_bucket(date_buckets, date_text, new_sp=0, fin_sp=0, add_unest=0, del_
     date_buckets[change_date] = (new_sp + c_new_sp, fin_sp + c_fin_sp, add_unest + c_add_unest, del_unest + c_del_unest)
 
 
-def bucket_deltas_from_issue_history(issue, date_buckets):
+# ToDo: This needs a rewrite to simplify
+# The two buckets should only be one that contains week:[key, new_sp, done_sp, add_unest, del_unest]
+# The build burndown can work from that. Nothing else needed. Should be a lot simpler.
+def bucket_deltas_from_issue_history(issue, date_buckets, issue_buckets):
     """
     Given an issue, put the Story Point (SP) deltas into buckets by change date.
     Need to calc (new_story_points, finished_story_points, added_unestimated_issues, deleted_unestimated_issues)
@@ -173,8 +191,6 @@ def bucket_deltas_from_issue_history(issue, date_buckets):
     # Update the story point totals as they change by merging in deltas.
     # We rely on Jira to return this in most-recent to oldest order.
     # This way we can imply the starting story_point with prev_last_sp
-    # ToDo: Still too many unest at the end. Let's try treating this as backwards chronological.
-    # Add the resolution state if any, and then keep current work and roll forward.
     cur_sp = issue['fields'].get('customfield_10004', 0)  # Get starting values
 
     # If the issue has been closed, let's remove either the SP or the default SP from totals
@@ -183,11 +199,14 @@ def bucket_deltas_from_issue_history(issue, date_buckets):
     if status == "Done":
         resolution_date = issue['fields']['resolutiondate']
         if cur_sp:
-            add_to_bucket(date_buckets, resolution_date, fin_sp=cur_sp)
+            add_to_date_bucket(date_buckets, resolution_date, fin_sp=cur_sp)
+            add_to_issue_bucket(issue_buckets, resolution_date, done_key=issue_key)
         else:
-            add_to_bucket(date_buckets, resolution_date, del_unest=1)
+            add_to_date_bucket(date_buckets, resolution_date, del_unest=1)
+            add_to_issue_bucket(issue_buckets, resolution_date, est_key=issue_key)
 
     # Now go back through history and update cur_sp
+
     for history in issue['changelog']['histories']:
         for item in history['items']:
             if item['field'] == 'Story Points':
@@ -195,15 +214,19 @@ def bucket_deltas_from_issue_history(issue, date_buckets):
                     when = history['created']
                     new_sp = int(item['toString'])
                     if new_sp > cur_sp:
-                        add_to_bucket(date_buckets, when, new_sp=new_sp - cur_sp)
+                        add_to_date_bucket(date_buckets, when, new_sp=new_sp - cur_sp)
+                        add_to_issue_bucket(issue_buckets, when, new_key=issue_key)
                     elif new_sp < cur_sp:
-                        add_to_bucket(date_buckets, when, fin_sp=cur_sp - new_sp)
+                        add_to_date_bucket(date_buckets, when, fin_sp=cur_sp - new_sp)
+                        add_to_issue_bucket(issue_buckets, when, done_key=issue_key)
 
                     # Did it become unestimated or estimated?
                     if cur_sp and not new_sp:
-                        add_to_bucket(date_buckets, when, del_unest=1)
+                        add_to_date_bucket(date_buckets, when, del_unest=1)
+                        add_to_issue_bucket(issue_buckets, when, est_key=issue_key)
                     elif new_sp and not cur_sp:
-                        add_to_bucket(date_buckets, when, add_unest=1)
+                        add_to_date_bucket(date_buckets, when, add_unest=1)
+                        add_to_issue_bucket(issue_buckets, when, unest_key=issue_key)
 
                     cur_sp = new_sp
 
@@ -211,14 +234,14 @@ def bucket_deltas_from_issue_history(issue, date_buckets):
     created = issue['fields'].get('created')
     if cur_sp:
         # must have been created with a story_point estimate
-        add_to_bucket(date_buckets, created, new_sp=cur_sp)
+        add_to_date_bucket(date_buckets, created, new_sp=cur_sp)
+        add_to_issue_bucket(issue_buckets, created, new_key=issue_key)
     else:
         # else we have an unestimated creation
-        add_to_bucket(date_buckets, created, add_unest=1)
+        add_to_date_bucket(date_buckets, created, add_unest=1)
+        add_to_issue_bucket(issue_buckets, created, unest_key=issue_key)
 
-    return date_buckets
-
-
+    return date_buckets, issue_buckets
 # </editor-fold>
 
 
@@ -340,15 +363,21 @@ def _build_chapter(c):
 
 
 def _build_burndown(issues):
+    """
+
+    :param issues:
+    :return:
+    """
     bdbs = []
     delta_buckets = {}  # date:(newSP, finSP, newUnest, removedUnest)
+    issue_buckets = {}  # date:(new_work_keys, done_work_keys, add_unest_keys, remove_unest_key)
     if 'issues' in issues:
         # For each issue, go through change history and add deltas for
         # new sp, finished sp, added unest, removed unest.
         # Fill just one date-bucket list of deltas from all issues.
         for issue in issues['issues']:
             # add the issue's deltas into the bucket's
-            bucket_deltas_from_issue_history(issue, delta_buckets)
+            bucket_deltas_from_issue_history(issue, delta_buckets, issue_buckets)
 
         if delta_buckets:
             # Iterate over date-keys, calculating rolling unest, new_work, and work. Add missing buckets.
@@ -357,18 +386,28 @@ def _build_burndown(issues):
 
             current_est = 0
             current_unest = 0
-            # TODO: Pass in scale and epic key to build URLs
+            current_work_keys = set()
+            current_unest_keys = set()
+            # TODO: Pass in scale and epic key to build URLs for the legend: show all changed tickets in this epic.
             for dt, de in arrow.Arrow.span_range('week', min_date_key, max_date_key):
                 dt_key = dt.format('YYYY-MM-DD')
                 (new_sp, fin_sp, add_unest, del_unest) = delta_buckets.get(dt_key, (0, 0, 0, 0))
                 current_est -= fin_sp
                 current_unest += add_unest
                 current_unest -= del_unest
+                (new_keys, del_keys, add_unest_keys, del_unest_keys) = issue_buckets.get(dt_key, ([], [], [], []))
+                current_work_keys.difference_update(del_keys)
+                current_unest_keys.update(add_unest_keys)
+                current_unest_keys.difference_update(del_unest_keys)
+                nwk = ",".join(new_keys)
+                cwk = ",".join(current_work_keys)
+                cuk = ",".join(current_unest_keys)
                 bdbs.append(BurnDownBar(start_dt=dt_key, id=uuid.uuid1(),
-                                        remaining_work=current_est, remaining_url=jira_url,
-                                        unestimated_count=current_unest, unestimated_url=jira_url,
-                                        new_work=new_sp, predicted_work=0, new_url=jira_url))
+                                        remaining_work=current_est, unestimated_count=current_unest, new_work=new_sp,
+                                        predicted_work=0, new_keys=nwk, work_keys=cwk, unest_keys=cuk))
                 current_est = current_est + new_sp
+                current_work_keys.update(new_keys)
+                current_work_keys.difference_update(del_keys)
 
     bd = BurnDown(id=uuid.uuid1(), scale=7, bars=bdbs)
     return bd
@@ -817,11 +856,10 @@ def gen_epic_burndowns_page(issue_keys):
             date_labels = []
             series_data = {'unest':[], 'remaining':[], 'new':[], 'predicted':[]}
             for bdb in bd.bars:
-                series_data['unest'].append({'y': bdb.unestimated_count, 'issue_keys': 'LAB-273'})
-                series_data['remaining'].append({'y': bdb.remaining_work, 'issue_keys': 'LAB-170'})
-                series_data['new'].append({'y': bdb.new_work, 'issue_keys': 'LAB-64'})
-                series_data['predicted'].append({'y': bdb.predicted_work, 'issue_keys': 'LAB-23'})
-
+                series_data['unest'].append({'y': bdb.unestimated_count, 'issue_keys': bdb.unest_keys})
+                series_data['remaining'].append({'y': bdb.remaining_work, 'issue_keys': bdb.work_keys})
+                series_data['new'].append({'y': bdb.new_work, 'issue_keys': bdb.new_keys})
+                series_data['predicted'].append({'y': bdb.predicted_work, 'issue_keys': None})
                 date_labels.append(bdb.start_dt)
             epic_to_series[eid] = series_data
             epic_to_labels[eid] = date_labels

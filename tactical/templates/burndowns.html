@@ -74,8 +74,10 @@
                 point: {
                     events: {
                         click: function () {
-                            location.href='https://cradlepoint.atlassian.net/issues/?jql=key in ('+this.options.key+')'
-                            {# alert(this.options.key) #}
+                            if (this.options.key != null) {
+                                {# alert("(" + this.options.key + ")" ) #}
+                                location.href="https://cradlepoint.atlassian.net/issues/?jql=key in (" + this.options.key + ")"
+                            }
                         }
                     }
                 }
@@ -84,7 +86,7 @@
         series: [
             {
                 name: 'Predicted', color: '#8D8D8E',
-                data: [{% for d in burndown_series[e.id]['predicted'] %} {y: {{d.y}}, key:'{{d.issue_keys}}' }, {% endfor %}]
+                data: [{% for d in burndown_series[e.id]['predicted'] %} {y: {{d.y}} }, {% endfor %}]
             },
             {
                 name: 'New Work', color: '#A8303A',

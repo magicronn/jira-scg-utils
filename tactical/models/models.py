@@ -63,7 +63,7 @@ class Chapter(object):
 
 class BurnDownBar(object):
     def __init__(self, id, start_dt, remaining_work, new_work, unestimated_count, predicted_work,
-                 remaining_url, new_url, unestimated_url):
+                 new_keys, work_keys, unest_keys):
         super(BurnDownBar, self).__init__()
         self.__dict__.update(locals())
 
