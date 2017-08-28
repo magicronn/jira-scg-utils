@@ -904,10 +904,14 @@ def gen_epic_releases_page(issue_keys):
         release_hash.update(issue_releases)
 
     nav_url_template = "https://cradlepoint.atlassian.net/issues/?jql=fixVersion={} and \"Epic Link\"={}"
+    no_release_nav_url = "https://cradlepoint.atlassian.net/issues/?jql=fixVersion is Empty and \"Epic Link\"={}"
     for epic in epics:
         for rid in release_hash.keys():
             if rid in epic2rel2counts[epic.id]:
-                epic2rel2counts[epic.id][rid]['nav_url'] = nav_url_template.format(rid,epic.id)
+                if rid == unknown_release.id:
+                    epic2rel2counts[epic.id][rid]['nav_url'] = no_release_nav_url.format(epic.id)
+                else:
+                    epic2rel2counts[epic.id][rid]['nav_url'] = nav_url_template.format(rid, epic.id)
 
     # Order the list of releases by release date, Nones go last
     releases = release_hash.values()

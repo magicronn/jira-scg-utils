@@ -1,6 +1,5 @@
 ToDos
 * Releases
-  + Make release metrics clickable
   + Figure out how to handle test
 
 
