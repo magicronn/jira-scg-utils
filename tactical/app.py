@@ -15,12 +15,13 @@ quick_debug = True
 
 api_url = '/api/v1'
 app = Flask(__name__)
-all_chapter_keys = u'UIX, DPL, CTL, ECM, EO, TES, FW, BSF, AP, SSO, DS, HAR, PCI, QFQ, QP' \
-                   ', QAS' if not quick_debug else u'BSF, SSO, ECM, UIX, CTL'
+all_chapter_keys = u'UIX, DPL, CTL, ECM, EO, TES, FW, BSF, AP, SSO, DS, HAR, PCI, ' \
+                   'QAIS, QAS, QFQ, PQA' if not quick_debug else u'BSF, SSO, ECM, UIX, CTL'
 relevant_chapter_keys = [x.strip() for x in all_chapter_keys.split(',')]
 chapter_user_groups = {'UIX': 'UIX Chapter', 'DPL': 'DAT Chapter', 'CTL': 'CTL Chapter',
                        'ECM': 'ECM-Core Team', 'EO': 'EngOps',
-                       'BSF': 'BSF Team', 'DS': 'ECM-App Team', 'HAR': 'HW Team'}
+                       'BSF': 'BSF Team', 'DS': 'ECM-App Team', 'HAR': 'HW Team',
+                       'QAIS': 'QA SS Team', 'QAS': 'QA ECM Team', 'QFQ': 'QA FW Team', 'PQA': 'QA Perimeter Group'}
 unassigned_user = User(id='Unassigned', display_name='Unassigned')
 unknown_release = Release(id='No Release', title='No Release', description='None', chapter_key=None,
                           release_date=None, released=False, jira_release_url=None, issue_digests=None)
@@ -808,11 +809,16 @@ def gen_epic_assignments_page(checked_ufs, issue_keys):
     #         epics_to_dev.append(e)
 
     # Need to pass in the digests for the epics already keyed by the chapters
+    nav_url_template = "https://cradlepoint.atlassian.net/issues/?jql=Project={} and \"Epic Link\"={}"
     selecid = {}  # selected-epic-chap-to-issuedigest
     for e in selected_epics:
         selecid[e.id] = {}
         for eid in e.issue_digests:
-            selecid[e.id][eid.chapter_key] = eid.ttl_issue_cnt
+            selecid[e.id][eid.chapter_key] = {
+                'count': eid.ttl_issue_cnt,
+                'nav_url': nav_url_template.format(eid.chapter_key, e.id)
+            }
+
     # decid = {}  # todevelop-epicid-chapid-to-issuedigest
     # for e in epics_to_dev:
     #     decid[e.id] = {}

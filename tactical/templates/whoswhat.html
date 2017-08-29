@@ -53,7 +53,13 @@
         <td class="epic-link" style="max-width:175px; overflow: hidden; text-overflow: ellipsis"><a href="{{e.jira_epic_url}}">{{e.id}}: {{e.summary}}</a></td>
         <td>{{e.assignee.display_name}}</td>
         {% for c in chapters %}
-        <td class="epic-whoswhat-data" style="text-align:left">{{selected_epic_chapter_counts[e.id][c.id]}}</td>
+        <td class="epic-whoswhat-data" style="text-align:left">
+            {% if selected_epic_chapter_counts[e.id][c.id] %}
+            <a href="{{selected_epic_chapter_counts[e.id][c.id]['nav_url']}}">
+                {{selected_epic_chapter_counts[e.id][c.id]['count']}}
+            </a>
+            {% endif %}
+        </td>
         {% endfor %}
     </tr>
     {% endfor %}
